@@ -10,7 +10,9 @@ from utils.data_processing import *
 
 def plot_countries(features,country_list):
     '''
-     a function that plots the pca components of the vectors
+    a function that plots the pca components of the vectors
+    :param features: pca features for each country
+    :param country_list: list of countries
     :return: 0
     '''
     colours = ['r','b','y','g','c','m','k']
@@ -26,6 +28,8 @@ def plot_countries(features,country_list):
 def cosine_sim(city_count, country_list):
     '''
     a function that calculates the cosine similarties between vectors
+    :param city_count: counts of cities per country
+    :param country_list: list of countries
     :return: 0
     '''
     num_cities = city_count.shape[0]
@@ -53,7 +57,12 @@ def cosine_sim(city_count, country_list):
 def q_1(city_count_l, city_totals_l, country_list):
     '''
     a function that uses city information to generate cosine similarties/pca components
+    :param city_count_l: counts of cities per country
+    :param city_totals_l: total number of cities
+    :param country_list: list of countries
+    :return: 0
     '''
+    print("++++++++++++++Question 1+++++++++++++++++++")
     features = []
     for item in city_count_l:
         features.append(list(zip(*city_count_l[item]))[0])
