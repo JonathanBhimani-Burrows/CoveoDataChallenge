@@ -1,5 +1,4 @@
 # CoveoDataChallenge
-# Data Challenge
 ## Setup 
 * Install Virtual Env
 ```
