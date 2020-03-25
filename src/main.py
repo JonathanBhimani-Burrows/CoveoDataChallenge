@@ -1,6 +1,4 @@
 import argparse
-import pandas as pd
-import itertools
 from utils.data_processing import read_prev, preprocess, create_cityinfo, plot_features
 from questions.question1 import q_1
 from questions.question2 import q_2

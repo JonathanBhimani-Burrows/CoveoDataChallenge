@@ -1,7 +1,6 @@
 import numpy as np
 from utils.matrix_processing import mask_col, mask_previous, track_predictions, create_hops
 import random
-import time
 
 
 def _choose_prediction(hops, options, counts, inverse_city_lookup,predictions):

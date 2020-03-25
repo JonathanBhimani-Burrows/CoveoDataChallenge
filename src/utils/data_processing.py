@@ -2,6 +2,7 @@ import pandas as pd
 import itertools
 import matplotlib.pyplot as plt
 
+
 def read_prev(path):
     '''
     a function that reads the previous cities from a text file
