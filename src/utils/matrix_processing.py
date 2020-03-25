@@ -45,8 +45,7 @@ def mask_previous(hops, previous, counts, cities, city_lookup, val):
             counts = track_predictions(counts, int(city_lookup[item]))
         starting_city = previous[-1]
     else:
-        starting_city = cities[np.argmax(counts)]
-        counts = track_predictions(counts, np.argmax(counts))
+        starting_city = 9999
     return hops, counts, starting_city
 
 def create_hops(data, cities, city_lookup, **kwargs):

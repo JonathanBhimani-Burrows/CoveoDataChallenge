@@ -1,6 +1,7 @@
 import numpy as np
 from utils.matrix_processing import mask_col, mask_previous, track_predictions, create_hops
 import random
+import time
 
 
 def _choose_prediction(hops, options, counts, inverse_city_lookup,predictions):
@@ -30,8 +31,8 @@ def V1(city_totals_l, previous, n, city_lookup):
     :return: list of predictions
     '''
     predictions = []
+    cities, counts = list(zip(*city_totals_l))
     if len(previous) > 0:
-        cities, counts = list(zip(*city_totals_l))
         counts = list(counts)
         for item in previous:
             counts[int(city_lookup[item])] = 0
@@ -57,11 +58,18 @@ def V2(city_totals_l,k_hops_2p2, previous, n, city_lookup, inverse_city_lookup):
     predictions = []
     cities, counts = list(zip(*city_totals_l))
     counts = np.asarray(counts)
-    #mask cities already searched
-    k_hops_2p2, counts, starting_city = mask_previous(k_hops_2p2, previous, counts, cities, city_lookup, 0)
-
-    #make suggestions
-    options = k_hops_2p2[int(city_lookup[starting_city]), :]
+    #mask cities already searched and make first prediction - deals with an no previous cities
+    if len(previous) == 0:
+        choice = 0
+        print("The next suggested city is", cities[choice])
+        predictions.append(cities[choice])
+        counts = track_predictions(counts, choice)
+        k_hops_2p2 = mask_col(k_hops_2p2, 0, 0)
+        options = k_hops_2p2[0, :]
+        n -= 1
+    else:
+        k_hops_2p2, counts, starting_city = mask_previous(k_hops_2p2, previous, counts, cities, city_lookup, 0)
+        options = k_hops_2p2[int(city_lookup[starting_city]), :]
     c = 0
     #loop over all cities that we need to predict
     for i in range(n):
@@ -103,27 +111,36 @@ def V3(city_totals_l,k_hops_2p3, previous, n, city_lookup, inverse_city_lookup):
         :param n: number of recommendations requested
         :return: updated khop matrix of potential locations to visit, updated number of counts per city
         '''
-        options = k_hops_2p3[k - 2, int(city_lookup[starting_city]), :]
+        if starting_city != 9999:
+            options = k_hops_2p3[k - 2, int(city_lookup[starting_city]), :]
+        else:
+            choice = [0]
+            print("The next suggested city is", inverse_city_lookup[choice[0]])
+            predictions.append(inverse_city_lookup[choice[0]])
+            counts = track_predictions(counts, choice[0])
+            k_hops_2p3 = mask_col(k_hops_2p3, choice[0], 0)
+            n -= 1
+            options = k_hops_2p3[k - 2, choice[0], :]
         flag = False
         for i in range(n):
-            print("k is",k)
+
             for j in range(k - 2, -1, -1):
                 if flag:
                     options = k_hops_2p3[j, choice[0], :]
                 flag = True
-                print('options sum is', options.sum())
                 if options.sum() != 0:
                     k_hops_2p3, options, counts, choice, predictions = _choose_prediction(k_hops_2p3, options, counts,
                                                                                     inverse_city_lookup,predictions)
                     break
                 elif options.sum() == 0:
                     choice = [np.argmax(counts)]
-                if j == 0:
+                elif j == 0:
                     choice = [0]
                 print("The next suggested city is", inverse_city_lookup[choice[0]])
                 predictions.append(inverse_city_lookup[choice[0]])
                 counts = track_predictions(counts, choice[0])
                 k_hops_2p3 = mask_col(k_hops_2p3, choice[0], 0)
+                break
             flag = False
             options = k_hops_2p3[k - 2, choice[0], :]
         return k_hops_2p3, counts, predictions
@@ -151,26 +168,21 @@ def V3(city_totals_l,k_hops_2p3, previous, n, city_lookup, inverse_city_lookup):
     length = len(previous) + n
     hops = k_hops_2p3.shape[0] + 1
     if length <= hops:
-        print("condition 1")
         #eg prev = 4, n = 3 -> length = 7
         # use k = 7 starting at starting city
         k = length
         _, _, predictions = _run_down_hops(k_hops_2p3, counts,cities, n, k,inverse_city_lookup, predictions)
     elif (len(previous) < hops and length >= hops ):
-        print("condition 2")
         # eg prev = 9, n = 5 -> length = 14 or prev = 9, n = 15 -> length = 24
         # use k = 11 up until 11, then finish delta with remaining k
         k = hops
-
-        # subdivide the total number into k length increments
+        # subdivide the total number into k length increments but subtract previous to not overpredict
         div = _generate_subdivisions(length, k)
-        print("Div is", div)
         div[0] -= len(previous)
         for item in div:
             k_hops_2p3, counts, predictions = _run_down_hops(k_hops_2p3, counts,cities, int(item), k,
                                                              inverse_city_lookup, predictions)
     elif (len(previous) > hops and n > hops):
-        print("condition 3")
         #eg prev = 13, n = 14 -> start
         #use k = 11 up until 11, then finish delta with remaining k
         k = hops
@@ -180,7 +192,6 @@ def V3(city_totals_l,k_hops_2p3, previous, n, city_lookup, inverse_city_lookup):
             k_hops_2p3, counts, predictions = _run_down_hops(k_hops_2p3, counts,cities, int(item), k,
                                                              inverse_city_lookup, predictions)
     elif (len(previous) > hops and n < hops):
-        print("condition 4")
         #eg prev = 13, n = 5 -> start
         #use k = 5 starting at starting city
         if n < 3:
@@ -223,6 +234,7 @@ def q_2(data, city_totals_l, previous, to_search):
     print("++++++++++++++Question 2.3+++++++++++++++++++")
     k_hops_2p3 = create_hops(data, cities, city_lookup, hop_depth=hop_depth)
     predictions_V3 = V3(city_totals_l, k_hops_2p3, previous, to_search, city_lookup, inverse_city_lookup)
+
     return predictions_V1, predictions_V2, predictions_V3, city_lookup, inverse_city_lookup
 
 
